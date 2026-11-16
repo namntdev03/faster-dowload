@@ -54,3 +54,11 @@ Mỗi lần đo in: dung lượng, thời gian, tốc độ TB, tốc độ đ�
 lúc đạt 90% tốc độ đỉnh, thời gian của 5% cuối, số kết nối. Cuối cùng in bảng trung vị và tỉ lệ
 fastdl / công cụ khác; chi tiết từng lần nằm trong CSV. File tải về bị xóa sau mỗi lần đo.
 IDM chỉ có trên Windows: đo tay rồi thêm dòng với `tool = idm` vào CSV.
+
+## Build tự động (GitHub Actions)
+
+`.github/workflows/build.yml` build CLI và app cho macOS (Apple Silicon + Intel), Windows, Linux.
+
+- Push lên `main` hoặc mở PR: tải file cài đặt ở tab **Actions** → lần chạy → mục **Artifacts**.
+- Phát hành: `git tag v0.1.0 && git push origin v0.1.0` → tạo bản **Release nháp** kèm file cài đặt.
+- Bản macOS chưa ký: lần đầu mở bằng chuột phải → Open, hoặc `xattr -dr com.apple.quarantine /Applications/FastDL.app`.
