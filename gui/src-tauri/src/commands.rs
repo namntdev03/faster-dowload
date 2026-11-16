@@ -1,4 +1,5 @@
-use crate::jobs::{Jobs, JobView, Kind, NewJob};
+use crate::job::{JobView, Kind, NewJob};
+use crate::jobs::Jobs;
 use serde::Deserialize;
 use std::path::PathBuf;
 use std::process::Command;
@@ -38,9 +39,9 @@ pub fn add_download(state: State<'_, Jobs>, req: AddReq) -> Result<Vec<u64>, Str
             connections: req.connections,
             headers: req.headers.clone(),
         });
-        job.start();
         ids.push(job.id);
     }
+    state.changed(); // lưu + cho chạy theo hàng đợi
     Ok(ids)
 }
 
@@ -59,7 +60,9 @@ pub fn pause_job(state: State<'_, Jobs>, id: u64) {
 #[tauri::command]
 pub fn resume_job(state: State<'_, Jobs>, id: u64) {
     if let Some(j) = state.get(id) {
-        j.start();
+        if j.enqueue() {
+            state.changed();
+        }
     }
 }
 
@@ -68,6 +71,12 @@ pub fn remove_job(state: State<'_, Jobs>, id: u64, delete_file: bool) {
     if let Some(j) = state.remove(id) {
         j.cleanup(delete_file);
     }
+}
+
+/// Số lượt tải chạy cùng lúc (1–10); mục khác nằm chờ.
+#[tauri::command]
+pub fn set_max_active(state: State<'_, Jobs>, n: usize) {
+    state.set_max_active(n);
 }
 
 /// Mở thư mục chứa file (hoặc chọn sẵn file nếu hệ điều hành hỗ trợ).

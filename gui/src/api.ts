@@ -1,7 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 
 export type Kind = 'file' | 'video';
-export type Status = 'running' | 'pausing' | 'paused' | 'done' | 'error';
+export type Status = 'queued' | 'running' | 'pausing' | 'paused' | 'done' | 'error';
 
 export interface Job {
   id: number;
@@ -35,4 +35,5 @@ export const api = {
   resume: (id: number) => invoke<void>('resume_job', { id }),
   remove: (id: number, deleteFile: boolean) => invoke<void>('remove_job', { id, deleteFile }),
   reveal: (id: number) => invoke<void>('reveal_job', { id }),
+  setMaxActive: (n: number) => invoke<void>('set_max_active', { n }),
 };

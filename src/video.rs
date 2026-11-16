@@ -6,6 +6,7 @@ use crate::ytdlp::{self, Info};
 use crate::ytrun;
 use anyhow::{bail, Context, Result};
 use std::path::{Path, PathBuf};
+use std::sync::atomic::Ordering;
 
 /// Tải video: ưu tiên engine đa kết nối của ta trên URL trực tiếp, rồi ghép bằng ffmpeg.
 /// Nếu là HLS/DASH hoặc tải trực tiếp thất bại thì giao cho yt-dlp (tải phân mảnh song song).
@@ -45,11 +46,30 @@ pub async fn run(url: &str, dir: &Path, format: &str, frags: usize, opts: &Optio
 async fn native(info: &Info, dir: &Path, opts: &Options) -> Result<PathBuf> {
     let base = sanitize(&info.title);
     let mut files = Vec::new();
+    let names: Vec<String> = info.parts.iter().enumerate().map(|(i, p)| format!("{base}.f{i}.{}", p.ext)).collect();
+    // Gộp tiến độ: tổng = kích thước mọi luồng (nếu yt-dlp biết hết).
+    let sizes: Option<Vec<u64>> = info.parts.iter().map(|p| p.size).collect();
+    if let Some(r) = &opts.reporter {
+        for n in &names {
+            r.add_temp(dir.join(n));
+        }
+        match &sizes {
+            Some(s) if info.parts.len() > 1 => r.grand_total.store(s.iter().sum(), Ordering::Relaxed),
+            _ => r.clear_grand(),
+        }
+    }
     for (i, part) in info.parts.iter().enumerate() {
+        if let (Some(r), Some(s)) = (&opts.reporter, &sizes) {
+            // Byte của các luồng trước (dùng kích thước thật nếu đã tải xong).
+            let before: u64 = (0..i)
+                .map(|k| std::fs::metadata(dir.join(&names[k])).map(|m| m.len()).unwrap_or(s[k]))
+                .sum();
+            r.offset.store(before, Ordering::Relaxed);
+        }
         if opts.reporter.as_ref().map(|r| r.cancelled()).unwrap_or(false) {
             return Err(Cancelled.into());
         }
-        let name = format!("{base}.f{i}.{}", part.ext);
+        let name = names[i].clone();
         let target = dir.join(&name);
         if target.exists() {
             files.push(target); // luồng này đã tải xong ở lần trước
@@ -105,6 +125,7 @@ async fn native(info: &Info, dir: &Path, opts: &Options) -> Result<PathBuf> {
 /// Cho GUI biết file cuối cùng (để mở thư mục, hiện đúng dung lượng).
 fn finish(opts: &Options, path: &Path) {
     if let Some(r) = &opts.reporter {
+        r.clear_grand();
         let n = std::fs::metadata(path).map(|m| m.len()).unwrap_or(0);
         r.set_path(path.to_path_buf());
         r.update(n, n, 0, 0);

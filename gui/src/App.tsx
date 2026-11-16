@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, Pause, Play, Search } from 'lucide-react';
-import type { Job } from './api';
+import { api, Job } from './api';
 import { AddDialog } from './components/AddDialog';
 import { EmptyState } from './components/EmptyState';
 import { JobCard } from './components/JobCard';
@@ -25,7 +25,7 @@ function matches(job: Job, f: Filter): boolean {
     case 'all':
       return true;
     case 'running':
-      return job.status === 'running' || job.status === 'pausing';
+      return job.status === 'running' || job.status === 'pausing' || job.status === 'queued';
     case 'paused':
       return job.status === 'paused';
     case 'done':
@@ -44,6 +44,11 @@ export default function App() {
   const [addText, setAddText] = useState<string | null>(null); // null = hộp thoại đóng
   const [removing, setRemoving] = useState<Job | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+
+  // Báo backend số lượt tải chạy cùng lúc (lúc mở app và khi đổi).
+  useEffect(() => {
+    api.setMaxActive(settings.maxActive).catch(() => undefined);
+  }, [settings.maxActive]);
 
   // Phím tắt: Cmd/Ctrl+N thêm link, Cmd/Ctrl+F tìm kiếm; dán link ở bất kỳ đâu sẽ mở hộp thêm link.
   useEffect(() => {
@@ -103,6 +108,8 @@ export default function App() {
         onTheme={(theme) => update({ theme })}
         speeds={speeds}
         totalSpeed={totalSpeed}
+        maxActive={settings.maxActive}
+        onMaxActive={(maxActive) => update({ maxActive })}
       />
 
       <div className="main">

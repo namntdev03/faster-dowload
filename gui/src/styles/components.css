@@ -23,6 +23,7 @@
 }
 .chip.is-running, .chip.is-done { background: var(--accent-soft); color: var(--accent); }
 .chip.is-paused { background: var(--warn-soft); color: var(--warn); }
+.chip.is-queued { background: var(--surface-2); color: var(--fg-muted); }
 .chip.is-error { background: var(--danger-soft); color: var(--danger); }
 
 .bar { height: 6px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }

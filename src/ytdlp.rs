@@ -13,6 +13,8 @@ pub struct Part {
     pub headers: Vec<(String, String)>,
     /// Kích thước mỗi request mà yt-dlp khuyến nghị (YouTube).
     pub chunk: Option<u64>,
+    /// Kích thước (chính xác hoặc ước lượng) yt-dlp báo, để gộp tiến độ các luồng.
+    pub size: Option<u64>,
 }
 
 #[derive(Debug)]
@@ -103,6 +105,7 @@ fn parse_part(f: &Value) -> Option<Part> {
         has_video: f["vcodec"].as_str().map(|v| v != "none").unwrap_or(true),
         headers,
         chunk: f["downloader_options"]["http_chunk_size"].as_u64(),
+        size: f["filesize"].as_u64().or_else(|| f["filesize_approx"].as_f64().map(|x| x as u64)),
     })
 }
 

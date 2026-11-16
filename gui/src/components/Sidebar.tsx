@@ -24,9 +24,11 @@ interface Props {
   onTheme: (t: ThemeMode) => void;
   speeds: number[];
   totalSpeed: number;
+  maxActive: number;
+  onMaxActive: (n: number) => void;
 }
 
-export function Sidebar({ filter, onFilter, counts, onAdd, theme, onTheme, speeds, totalSpeed }: Props) {
+export function Sidebar({ filter, onFilter, counts, onAdd, theme, onTheme, speeds, totalSpeed, maxActive, onMaxActive }: Props) {
   return (
     <aside className="sidebar">
       <div className="brand">
@@ -70,6 +72,17 @@ export function Sidebar({ filter, onFilter, counts, onAdd, theme, onTheme, speed
             {totalSpeed > 0 ? fmtSpeed(totalSpeed) : 'Đang rảnh'}
           </div>
           <SpeedGraph values={speeds} />
+        </div>
+        <div className="theme-row hide-narrow">
+          <span className="speed-label" title="Số lượt tải chạy cùng lúc, các mục khác nằm chờ">
+            Tải cùng lúc
+          </span>
+          <Segmented<string>
+            label="Số lượt tải chạy cùng lúc"
+            value={String(maxActive)}
+            onChange={(v) => onMaxActive(Number(v))}
+            options={['1', '2', '3', '5'].map((v) => ({ value: v, label: v }))}
+          />
         </div>
         <div className="theme-row hide-narrow">
           <span className="speed-label">Giao diện</span>

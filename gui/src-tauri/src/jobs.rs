@@ -1,203 +1,127 @@
-use fastdl::config::{parse_header, Options};
-use fastdl::report::{Cancelled, Reporter};
-use fastdl::{engine, video};
-use serde::{Deserialize, Serialize};
+//! Danh sách lượt tải: hàng đợi (giới hạn số mục chạy cùng lúc) và lưu vào jobs.json.
+
+use crate::job::{Job, JobRecord, JobView, NewJob, Status};
 use std::collections::BTreeMap;
-use std::path::PathBuf;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-#[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum Kind {
-    File,
-    Video,
-}
-
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub enum Status {
-    Running,
-    Paused,
-    Done,
-    Error,
-}
-
-pub struct Job {
-    pub id: u64,
-    pub url: String,
-    pub dir: PathBuf,
-    pub kind: Kind,
-    pub format: String,
-    pub connections: usize,
-    pub headers: Vec<String>,
-    pub rep: Arc<Reporter>,
-    status: Mutex<Status>,
-    error: Mutex<String>,
-}
-
-#[derive(Serialize)]
-pub struct JobView {
-    pub id: u64,
-    pub url: String,
-    pub name: String,
-    pub kind: Kind,
-    pub status: &'static str,
-    pub downloaded: u64,
-    pub total: u64,
-    pub speed: u64,
-    pub conns: usize,
-    pub error: String,
-    pub note: String,
-    pub dir: String,
-}
-
-impl Job {
-    pub fn view(&self) -> JobView {
-        let st = *self.status.lock().unwrap();
-        let status = match st {
-            Status::Running if self.rep.cancelled() => "pausing",
-            Status::Running => "running",
-            Status::Paused => "paused",
-            Status::Done => "done",
-            Status::Error => "error",
-        };
-        JobView {
-            id: self.id,
-            url: self.url.clone(),
-            name: self.rep.name(),
-            kind: self.kind,
-            status,
-            downloaded: self.rep.downloaded.load(Ordering::Relaxed),
-            total: self.rep.total.load(Ordering::Relaxed),
-            speed: self.rep.speed.load(Ordering::Relaxed),
-            conns: self.rep.conns.load(Ordering::Relaxed),
-            error: self.error.lock().unwrap().clone(),
-            note: self.rep.note(),
-            dir: self.dir.to_string_lossy().into_owned(),
-        }
-    }
-
-    pub fn is_running(&self) -> bool {
-        *self.status.lock().unwrap() == Status::Running
-    }
-
-    pub fn pause(&self) {
-        self.rep.cancel.store(true, Ordering::Relaxed);
-    }
-
-    /// Bắt đầu hoặc tiếp tục (engine tự resume nhờ file .fastdl).
-    pub fn start(self: &Arc<Self>) {
-        {
-            let mut st = self.status.lock().unwrap();
-            if *st == Status::Running || *st == Status::Done {
-                return;
-            }
-            *st = Status::Running;
-        }
-        self.error.lock().unwrap().clear();
-        self.rep.reset();
-        let job = self.clone();
-        tauri::async_runtime::spawn(async move {
-            let res = job.run().await;
-            let mut st = job.status.lock().unwrap();
-            match res {
-                Ok(()) => *st = Status::Done,
-                Err(e) if e.downcast_ref::<Cancelled>().is_some() => *st = Status::Paused,
-                Err(e) => {
-                    *job.error.lock().unwrap() = format!("{e:#}");
-                    *st = Status::Error;
-                }
-            }
-        });
-    }
-
-    async fn run(&self) -> anyhow::Result<()> {
-        let mut o = Options::default();
-        o.max_conns = self.connections.clamp(1, 64);
-        o.init_conns = o.init_conns.min(o.max_conns);
-        o.quiet = true;
-        o.reporter = Some(self.rep.clone());
-        for h in &self.headers {
-            o.headers.push(parse_header(h)?);
-        }
-        match self.kind {
-            Kind::File => {
-                engine::download(&self.url, &self.dir, None, &o).await?;
-            }
-            Kind::Video => video::run(&self.url, &self.dir, &self.format, 16, &o).await?,
-        }
-        Ok(())
-    }
-
-    /// Xóa file tạm (và file đã xong nếu `delete_done`). Chờ job dừng hẳn rồi mới xóa.
-    pub fn cleanup(self: Arc<Self>, delete_done: bool) {
-        self.pause();
-        std::thread::spawn(move || {
-            for _ in 0..100 {
-                if !self.is_running() {
-                    break;
-                }
-                std::thread::sleep(Duration::from_millis(100));
-            }
-            let Some(path) = self.rep.path() else { return };
-            let mut part = path.as_os_str().to_owned();
-            part.push(".part");
-            let part = PathBuf::from(part);
-            let mut state = part.as_os_str().to_owned();
-            state.push(".fastdl");
-            let _ = std::fs::remove_file(&part);
-            let _ = std::fs::remove_file(PathBuf::from(state));
-            if delete_done {
-                let _ = std::fs::remove_file(&path);
-            }
-        });
-    }
-}
-
-#[derive(Default)]
-pub struct Jobs {
+pub struct Hub {
     map: Mutex<BTreeMap<u64, Arc<Job>>>,
     next: AtomicU64,
+    max_active: AtomicUsize,
+    dirty: AtomicBool,
+    store: Mutex<Option<PathBuf>>,
+    pump_lock: Mutex<()>,
 }
 
-pub struct NewJob {
-    pub url: String,
-    pub dir: PathBuf,
-    pub kind: Kind,
-    pub format: String,
-    pub connections: usize,
-    pub headers: Vec<String>,
-}
+#[derive(Clone)]
+pub struct Jobs(pub(crate) Arc<Hub>);
 
 impl Jobs {
+    pub fn new() -> Self {
+        Jobs(Arc::new(Hub {
+            map: Mutex::new(BTreeMap::new()),
+            next: AtomicU64::new(0),
+            max_active: AtomicUsize::new(3),
+            dirty: AtomicBool::new(false),
+            store: Mutex::new(None),
+            pump_lock: Mutex::new(()),
+        }))
+    }
+
     pub fn add(&self, n: NewJob) -> Arc<Job> {
-        let id = self.next.fetch_add(1, Ordering::Relaxed) + 1;
-        let job = Arc::new(Job {
-            id,
-            url: n.url,
-            dir: n.dir,
-            kind: n.kind,
-            format: n.format,
-            connections: n.connections,
-            headers: n.headers,
-            rep: Reporter::new(),
-            status: Mutex::new(Status::Paused),
-            error: Mutex::new(String::new()),
-        });
-        self.map.lock().unwrap().insert(id, job.clone());
+        let id = self.0.next.fetch_add(1, Ordering::Relaxed) + 1;
+        let job = Job::new(id, n, Arc::downgrade(&self.0));
+        self.0.map.lock().unwrap().insert(id, job.clone());
         job
     }
 
     pub fn get(&self, id: u64) -> Option<Arc<Job>> {
-        self.map.lock().unwrap().get(&id).cloned()
+        self.0.map.lock().unwrap().get(&id).cloned()
     }
 
     pub fn remove(&self, id: u64) -> Option<Arc<Job>> {
-        self.map.lock().unwrap().remove(&id)
+        let j = self.0.map.lock().unwrap().remove(&id);
+        self.changed();
+        j
     }
 
     pub fn views(&self) -> Vec<JobView> {
-        self.map.lock().unwrap().values().map(|j| j.view()).collect()
+        self.all().iter().map(|j| j.view()).collect()
     }
+
+    fn all(&self) -> Vec<Arc<Job>> {
+        self.0.map.lock().unwrap().values().cloned().collect()
+    }
+
+    pub fn set_max_active(&self, n: usize) {
+        self.0.max_active.store(n.clamp(1, 10), Ordering::Relaxed);
+        self.pump();
+    }
+
+    /// Có gì thay đổi: đánh dấu cần lưu và cho mục chờ chạy nếu còn chỗ.
+    pub fn changed(&self) {
+        self.0.dirty.store(true, Ordering::Relaxed);
+        self.pump();
+    }
+
+    /// Chạy các mục đang chờ (theo thứ tự thêm vào) cho tới khi đủ số mục chạy cùng lúc.
+    pub fn pump(&self) {
+        let _g = self.0.pump_lock.lock().unwrap();
+        let jobs = self.all();
+        let max = self.0.max_active.load(Ordering::Relaxed);
+        let mut running = jobs.iter().filter(|j| j.status() == Status::Running).count();
+        for j in jobs.iter().filter(|j| j.status() == Status::Queued) {
+            if running >= max {
+                break;
+            }
+            j.start();
+            running += 1;
+        }
+    }
+
+    /// Nạp jobs.json lúc mở app, rồi chạy luồng nền lưu lại mỗi 2 giây khi có thay đổi.
+    pub fn open(&self, path: PathBuf) {
+        let records: Vec<JobRecord> = std::fs::read(&path)
+            .ok()
+            .and_then(|b| serde_json::from_slice(&b).ok())
+            .unwrap_or_default();
+        {
+            let mut map = self.0.map.lock().unwrap();
+            for r in records {
+                let id = r.id;
+                self.0.next.fetch_max(id, Ordering::Relaxed);
+                map.insert(id, Job::from_record(r, Arc::downgrade(&self.0)));
+            }
+        }
+        *self.0.store.lock().unwrap() = Some(path);
+        let me = self.clone();
+        std::thread::spawn(move || loop {
+            std::thread::sleep(Duration::from_secs(2));
+            let running = me.all().iter().any(|j| j.status() == Status::Running);
+            if me.0.dirty.swap(false, Ordering::Relaxed) || running {
+                me.save();
+            }
+        });
+    }
+
+    pub fn save(&self) {
+        let Some(path) = self.0.store.lock().unwrap().clone() else { return };
+        let records: Vec<JobRecord> = self.all().iter().map(|j| j.record()).collect();
+        if let Err(e) = write_atomic(&path, &records) {
+            eprintln!("không lưu được danh sách tải: {e:#}");
+        }
+    }
+}
+
+fn write_atomic(path: &Path, records: &[JobRecord]) -> anyhow::Result<()> {
+    if let Some(dir) = path.parent() {
+        std::fs::create_dir_all(dir)?;
+    }
+    let tmp = path.with_extension("json.tmp");
+    std::fs::write(&tmp, serde_json::to_vec_pretty(records)?)?;
+    std::fs::rename(&tmp, path)?;
+    Ok(())
 }

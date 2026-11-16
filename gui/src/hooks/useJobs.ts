@@ -66,7 +66,11 @@ export function useJobs(push: PushToast) {
       reveal: (id: number) => run(() => api.reveal(id)),
       remove: (id: number, deleteFile: boolean) => run(() => api.remove(id, deleteFile)),
       pauseAll: () =>
-        run(() => Promise.all(jobsRef.current.filter((j) => j.status === 'running').map((j) => api.pause(j.id)))),
+        run(() =>
+          Promise.all(
+            jobsRef.current.filter((j) => j.status === 'running' || j.status === 'queued').map((j) => api.pause(j.id)),
+          ),
+        ),
       resumeAll: () =>
         run(() =>
           Promise.all(

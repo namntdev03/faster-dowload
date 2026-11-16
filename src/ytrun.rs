@@ -38,6 +38,7 @@ pub async fn run(url: &str, dir: &Path, format: &str, frags: usize, aria: bool, 
         "--print",
         "after_move:FDL_PATH|%(filepath)s",
     ]);
+    rep.clear_grand();
     let mut child = c
         .arg(url)
         .stdin(Stdio::null())

@@ -9,10 +9,12 @@ export interface Settings {
   connections: number;
   format: string;
   mode: AddMode;
+  /** Số lượt tải chạy cùng lúc, các mục khác nằm chờ. */
+  maxActive: number;
 }
 
 const KEY = 'fastdl.settings.v1';
-const DEFAULTS: Settings = { theme: 'auto', dir: '', connections: 16, format: 'bv*+ba/b', mode: 'auto' };
+const DEFAULTS: Settings = { theme: 'auto', dir: '', connections: 16, format: 'bv*+ba/b', mode: 'auto', maxActive: 3 };
 
 export const CONN_PRESETS = [4, 8, 16, 32];
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowDownToLine, CircleCheck, FolderOpen, Pause, Play, Trash2, TriangleAlert } from 'lucide-react';
+import { ArrowDownToLine, CircleCheck, Clock, FolderOpen, Pause, Play, Trash2, TriangleAlert } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { Job, Status } from '../api';
 import { fmtBytes, fmtEta, fmtSpeed, hostOf } from '../format';
@@ -7,6 +7,7 @@ import { FileIcon } from './FileIcon';
 import { IconButton } from './IconButton';
 
 const STATUS: Record<Status, { text: string; Icon: LucideIcon; cls: string }> = {
+  queued: { text: 'Đang chờ', Icon: Clock, cls: 'is-queued' },
   running: { text: 'Đang tải', Icon: ArrowDownToLine, cls: 'is-running' },
   pausing: { text: 'Đang dừng', Icon: Pause, cls: 'is-paused' },
   paused: { text: 'Đã dừng', Icon: Pause, cls: 'is-paused' },
@@ -89,7 +90,7 @@ export function JobCard({ job, onPause, onResume, onReveal, onRemove }: Props) {
       </div>
 
       <div className="card-actions">
-        {active && <IconButton icon={Pause} label="Dừng" onClick={onPause} />}
+        {(active || job.status === 'queued') && <IconButton icon={Pause} label="Dừng" onClick={onPause} />}
         {canResume && <IconButton icon={Play} label="Tiếp tục" onClick={onResume} />}
         <IconButton icon={FolderOpen} label="Mở thư mục" onClick={onReveal} />
         <IconButton icon={Trash2} label="Xóa" onClick={onRemove} danger />
