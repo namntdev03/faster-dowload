@@ -61,4 +61,6 @@ IDM chỉ có trên Windows: đo tay rồi thêm dòng với `tool = idm` vào C
 
 - Push lên `main` hoặc mở PR: tải file cài đặt ở tab **Actions** → lần chạy → mục **Artifacts**.
 - Phát hành: `git tag v0.1.0 && git push origin v0.1.0` → tạo bản **Release nháp** kèm file cài đặt.
-- Bản macOS chưa ký: lần đầu mở bằng chuột phải → Open, hoặc `xattr -dr com.apple.quarantine /Applications/FastDL.app`.
+- Bản macOS được ký ad-hoc (`signingIdentity: "-"`): chạy được trên Apple Silicon, không bị báo "đã hỏng".
+  Vì không phải chứng chỉ Apple Developer nên Gatekeeper vẫn hỏi lần đầu: chuột phải → Open,
+  hoặc `xattr -dr com.apple.quarantine /Applications/FastDL.app`.
