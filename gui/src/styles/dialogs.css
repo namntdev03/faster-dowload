@@ -1,0 +1,42 @@
+.overlay { position: fixed; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center; padding: 16px; background: var(--overlay); animation: fade 0.15s ease; }
+.dialog {
+  max-width: 100%; max-height: calc(100vh - 32px); overflow-y: auto;
+  display: flex; flex-direction: column; gap: 16px; padding: 22px;
+  background: var(--surface); border: 1px solid var(--border-strong); border-radius: 16px; box-shadow: var(--shadow);
+  animation: pop 0.18s ease;
+}
+.dialog h2 { font-size: 17px; font-weight: 700; }
+.dialog-sub { color: var(--fg-muted); font-size: 13px; margin-top: 2px; }
+.dialog-actions { display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-top: 4px; }
+.dialog-actions .hint { margin-right: auto; font-size: 12px; color: var(--fg-muted); }
+
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field > label, .field-label { font-size: 12px; font-weight: 600; color: var(--fg-muted); letter-spacing: 0.2px; }
+.field-hint { font-size: 12px; color: var(--fg-muted); }
+.field-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.field-error { padding: 8px 10px; border-radius: var(--radius-sm); background: var(--danger-soft); color: var(--danger); font-size: 13px; }
+.dir-row { display: flex; gap: 8px; }
+.dir-row input { flex: 1; min-width: 0; }
+
+.url-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.url-chip {
+  display: inline-flex; align-items: center; gap: 6px; max-width: 220px; padding: 3px 9px;
+  font-size: 12px; border-radius: 999px; background: var(--surface-2); color: var(--fg-muted);
+}
+.url-chip b { font-weight: 600; color: var(--accent); flex: none; }
+.url-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.advanced summary { cursor: pointer; font-size: 13px; color: var(--fg-muted); padding: 4px 0; }
+.advanced summary:hover { color: var(--fg); }
+.advanced[open] summary { margin-bottom: 8px; }
+
+.check { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; font-size: 13px; }
+.check input { margin-top: 3px; width: 16px; height: 16px; accent-color: var(--danger-solid); }
+
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pop { from { opacity: 0; transform: translateY(6px) scale(0.985); } to { opacity: 1; transform: none; } }
+@media (max-width: 560px) { .field-row { grid-template-columns: 1fr; } }
+
+.dialog-sub { overflow-wrap: anywhere; }
+.field-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.field-top .btn { min-height: 28px; padding: 0 8px; font-size: 12px; }

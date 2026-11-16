@@ -1,0 +1,9 @@
+/target
+*.part
+*.fastdl
+node_modules
+dist
+/gui/src-tauri/target
+/gui/src-tauri/gen
+/bench.csv
+.DS_Store

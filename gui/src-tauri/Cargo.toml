@@ -1,0 +1,21 @@
+[package]
+name = "fastdl-gui"
+version = "0.1.0"
+edition = "2021"
+description = "Giao diện FastDL"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+anyhow = "1"
+fastdl = { path = "../.." }
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1

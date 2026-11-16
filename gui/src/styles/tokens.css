@@ -1,0 +1,57 @@
+/* Design tokens: Minimalism / Swiss, nền xanh đen + nhấn xanh lá. Tối là mặc định. */
+:root,
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #0b1220;
+  --surface: #121a2b;
+  --surface-2: #182236;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.18);
+  --fg: #e8edf5;
+  --fg-muted: #94a3b8;
+  --accent: #10b981;
+  --accent-hover: #34d399;
+  --on-accent: #04130d;
+  --accent-soft: rgba(16, 185, 129, 0.14);
+  --warn: #fbbf24;
+  --warn-soft: rgba(251, 191, 36, 0.14);
+  --danger: #f87171;
+  --danger-soft: rgba(248, 113, 113, 0.14);
+  --danger-solid: #dc2626;
+  --on-danger: #ffffff;
+  --ring: #6ee7b7;
+  --shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  --overlay: rgba(3, 7, 18, 0.62);
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg: #f4f6fa;
+  --surface: #ffffff;
+  --surface-2: #eef2f7;
+  --border: rgba(15, 23, 42, 0.1);
+  --border-strong: rgba(15, 23, 42, 0.24);
+  --fg: #0f172a;
+  --fg-muted: #475569;
+  --accent: #047857;
+  --accent-hover: #065f46;
+  --on-accent: #ffffff;
+  --accent-soft: rgba(4, 120, 87, 0.1);
+  --warn: #b45309;
+  --warn-soft: rgba(180, 83, 9, 0.1);
+  --danger: #b91c1c;
+  --danger-soft: rgba(185, 28, 28, 0.08);
+  --danger-solid: #b91c1c;
+  --on-danger: #ffffff;
+  --ring: #047857;
+  --shadow: 0 12px 40px rgba(15, 23, 42, 0.2);
+  --overlay: rgba(15, 23, 42, 0.4);
+}
+
+:root {
+  --font: Inter, -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --t: 160ms;
+}

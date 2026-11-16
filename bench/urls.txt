@@ -1,0 +1,15 @@
+# Bộ URL cố định cho `fastdl bench`. Mỗi dòng một link, chữ sau link là chú thích.
+# Link nào chết (404) thì thay bằng link cùng loại.
+
+# File nhỏ: đo khởi động (TTFB, mở kết nối)
+https://github.com/BurntSushi/ripgrep/releases/download/14.1.1/ripgrep-14.1.1-x86_64-apple-darwin.tar.gz  GitHub release ~2 MB
+
+# CDN lớn, thường đã đạt trần đường truyền với 1 kết nối
+https://nodejs.org/dist/v22.11.0/node-v22.11.0.pkg  Cloudflare ~75 MB
+
+# Server giới hạn theo từng kết nối: đa kết nối thắng rõ (đã đo: fastdl 2.3 MiB/s vs curl 0.14 MiB/s)
+https://www.python.org/ftp/python/3.13.0/python-3.13.0-macos11.pkg  Fastly ~67 MB
+
+# Server gần Việt Nam và server xa (độ trễ cao)
+https://sgp-ping.vultr.com/vultr.com.100MB.bin  Singapore 100 MB
+https://fsn1-speed.hetzner.com/100MB.bin  Đức 100 MB
