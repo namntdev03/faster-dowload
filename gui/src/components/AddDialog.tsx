@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { open } from '@tauri-apps/plugin-dialog';
+import { readText } from '@tauri-apps/plugin-clipboard-manager';
 import { Clipboard, FolderOpen } from 'lucide-react';
 import { api, Kind } from '../api';
 import { extractUrls, hostOf, looksLikeVideo, MOD_KEY } from '../format';
@@ -58,7 +59,7 @@ export function AddDialog({ initialText, settings, onSettings, onClose, onAdded 
 
   const pasteClipboard = async () => {
     try {
-      const t = await navigator.clipboard.readText();
+      const t = (await readText()) ?? '';
       if (extractUrls(t).length === 0) {
         setError('Clipboard chưa có link http(s).');
         return;

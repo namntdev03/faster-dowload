@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, Job, Status } from '../api';
 import type { PushToast } from './useToasts';
+import { notify } from '../notify';
 
 const HISTORY = 60; // 60 mẫu x 0.5s = 30 giây
 
@@ -26,8 +27,14 @@ export function useJobs(push: PushToast) {
         prev.current.set(j.id, j.status);
         if (firstLoad.current) continue;
         const label = j.name || j.url;
-        if (j.status === 'done') pushRef.current('success', `Đã tải xong: ${label}`);
-        if (j.status === 'error') pushRef.current('error', `Lỗi khi tải ${label}: ${j.error}`);
+        if (j.status === 'done') {
+          pushRef.current('success', `Đã tải xong: ${label}`);
+          notify('Đã tải xong', label);
+        }
+        if (j.status === 'error') {
+          pushRef.current('error', `Lỗi khi tải ${label}: ${j.error}`);
+          notify('Tải lỗi', `${label}: ${j.error}`);
+        }
       }
       firstLoad.current = false;
       for (const id of Array.from(prev.current.keys())) if (!seen.has(id)) prev.current.delete(id);

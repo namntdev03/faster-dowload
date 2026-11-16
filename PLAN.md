@@ -25,40 +25,40 @@ Mỗi bước ghi rõ: làm gì, sửa file nào, thế nào là xong. Làm theo
   gần như đứng, worker rảnh chờ thay vì thoát, xong ngay khi đủ byte. TLS dự phòng: rustls lỗi thì thử TLS
   hệ điều hành (reqwest `native-tls`).
 
-## Bước 0 – Đưa dự án vào git
+## Bước 0 – Đưa dự án vào git — ĐÃ LÀM
 
 Thư mục chưa phải git repo. `git init`, commit trạng thái hiện tại bằng tài khoản namntdev03, để mỗi
 bước sau là một commit, hỏng thì quay lại được. Xóa `gui/_to_delete/` trước khi commit.
 
 ## Giai đoạn 1 – Ổn định và đồng bộ UI ↔ engine
 
-### 1.1 Lưu danh sách tải qua các lần mở app
+### 1.1 Lưu danh sách tải qua các lần mở app — ĐÃ LÀM
 - Mới `gui/src-tauri/src/store.rs`: đọc/ghi `jobs.json` trong `app_data_dir()` (ghi file tạm rồi rename).
 - `jobs.rs`: struct `JobRecord` (Serialize/Deserialize) gồm url, dir, kind, format, connections, headers,
   name, path, status, error, downloaded, total. `Jobs` có cờ `dirty`; một task nền mỗi 2s ghi nếu dirty.
 - `main.rs` (`setup`): nạp `jobs.json`; mục đang "running" lúc tắt → "paused" (engine tự resume nhờ `.fastdl`).
 - Xong khi: tải dở, tắt app, mở lại → mục vẫn còn, bấm Tiếp tục chạy tiếp đúng phần trăm.
 
-### 1.2 Hàng đợi + giới hạn số lượt tải cùng lúc
+### 1.2 Hàng đợi + giới hạn số lượt tải cùng lúc — ĐÃ LÀM
 - Trạng thái mới `queued` (Rust `Status::Queued`, `api.ts` `Status`, chip "Đang chờ", lọc chung nhóm "Đang tải").
 - `Jobs::pump()`: chạy tối đa N mục (mặc định 3), mục xong/dừng/lỗi thì gọi `pump()` lấy mục chờ kế tiếp.
 - Lệnh mới `set_max_active(n)`; GUI đặt N trong Cài đặt (bước 3.3).
 - Xong khi: thêm 10 link → chỉ 3 chạy, 7 "Đang chờ", tự chạy dần.
 
-### 1.3 Tiến độ video gộp thành một thanh
+### 1.3 Tiến độ video gộp thành một thanh — ĐÃ LÀM
 - `ytdlp.rs`: `Part.size` lấy từ `filesize` / `filesize_approx` của format.
 - `report.rs`: thêm `offset: AtomicU64` và `grand_total: AtomicU64`; `JobView.downloaded = offset + downloaded`,
   `total = grand_total` nếu > 0.
 - `video.rs::native`: trước mỗi luồng đặt `offset` = tổng các luồng đã xong.
 - Xong khi: video YouTube 2 luồng chạy 0→100% một lần, ETA hợp lý.
 
-### 1.4 Xóa mục video dọn sạch file tạm
+### 1.4 Xóa mục video dọn sạch file tạm — ĐÃ LÀM
 - `report.rs`: `temps: Mutex<Vec<PathBuf>>`; `video.rs` ghi tên các file luồng `.fN.ext` vào đó.
 - `jobs.rs::cleanup`: xóa mỗi file tạm cùng `.part`, `.part.fastdl`; với yt-dlp dự phòng xóa
   `<tên>*.part` / `*.ytdl` trong thư mục đích.
 - Xong khi: thêm video → dừng giữa chừng → Xóa → thư mục không còn rác.
 
-### 1.5 Clipboard và thông báo hệ thống
+### 1.5 Clipboard và thông báo hệ thống — ĐÃ LÀM
 - Thêm `tauri-plugin-clipboard-manager` (nút "Dán từ clipboard" dùng plugin thay `navigator.clipboard`,
   vì WKWebView trên macOS có thể từ chối hoặc hiện popup xin quyền).
 - Thêm `tauri-plugin-notification`: tải xong/lỗi khi cửa sổ không được focus → thông báo macOS.

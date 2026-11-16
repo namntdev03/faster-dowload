@@ -1,6 +1,13 @@
 {
   "identifier": "default",
   "description": "Quyền cho cửa sổ chính",
-  "windows": ["main"],
-  "permissions": ["core:default", "dialog:default"]
+  "windows": [
+    "main"
+  ],
+  "permissions": [
+    "core:default",
+    "dialog:default",
+    "clipboard-manager:allow-read-text",
+    "notification:default"
+  ]
 }
