@@ -46,12 +46,20 @@ jobs:
       - name: Test
         if: matrix.name != 'macos-x64'
         run: cargo test --release --target ${{ matrix.target }}
+      - name: Đóng gói
+        shell: bash
+        run: |
+          mkdir -p dist
+          cd target/${{ matrix.target }}/release
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            7z a ../../../dist/fastdl-cli-${{ matrix.name }}.zip fastdl.exe
+          else
+            tar czf ../../../dist/fastdl-cli-${{ matrix.name }}.tar.gz fastdl
+          fi
       - uses: actions/upload-artifact@v4
         with:
           name: fastdl-cli-${{ matrix.name }}
-          path: |
-            target/${{ matrix.target }}/release/fastdl
-            target/${{ matrix.target }}/release/fastdl.exe
+          path: dist/*
           if-no-files-found: error
 
   app:
@@ -98,6 +106,9 @@ jobs:
           # Chỉ tạo Release khi push tag v*
           tagName: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || '' }}
           releaseName: FastDL ${{ github.ref_name }}
+          releaseBody: |
+            Bản cài đặt app (dmg, msi, exe, deb, AppImage) và công cụ dòng lệnh `fastdl` cho từng hệ điều hành.
+            macOS: app ký ad-hoc, lần đầu mở bằng chuột phải → Open.
           releaseDraft: true
           prerelease: false
       - uses: actions/upload-artifact@v4
@@ -111,3 +122,27 @@ jobs:
             gui/src-tauri/target/${{ matrix.target }}/release/bundle/deb/*.deb
             gui/src-tauri/target/${{ matrix.target }}/release/bundle/appimage/*.AppImage
           if-no-files-found: warn
+
+  # Chỉ chạy khi push tag v*: gắn bản CLI vào Release rồi công khai.
+  release:
+    name: Phát hành
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [cli, app]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tag phải khớp version trong Cargo.toml
+        run: |
+          v=$(grep -m1 '^version' Cargo.toml | cut -d'"' -f2)
+          [ "v$v" = "${{ github.ref_name }}" ] || { echo "Tag ${{ github.ref_name }} không khớp version $v trong Cargo.toml"; exit 1; }
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: fastdl-cli-*
+          path: dist
+          merge-multiple: true
+      - name: Đính kèm CLI và công khai Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${{ github.ref_name }}" dist/* --clobber
+          gh release edit "${{ github.ref_name }}" --draft=false

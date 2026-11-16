@@ -60,7 +60,8 @@ IDM chỉ có trên Windows: đo tay rồi thêm dòng với `tool = idm` vào C
 `.github/workflows/build.yml` build CLI và app cho macOS (Apple Silicon + Intel), Windows, Linux.
 
 - Push lên `main` hoặc mở PR: tải file cài đặt ở tab **Actions** → lần chạy → mục **Artifacts**.
-- Phát hành: `git tag v0.1.0 && git push origin v0.1.0` → tạo bản **Release nháp** kèm file cài đặt.
+- Phát hành: `git tag v0.1.0 && git push origin v0.1.0` → build xong tự tạo **Release** công khai, kèm file cài đặt app và bản CLI cho từng hệ điều hành.
+  Tag phải khớp `version` trong `Cargo.toml` (và nên khớp `gui/src-tauri/tauri.conf.json`).
 - Bản macOS được ký ad-hoc (`signingIdentity: "-"`): chạy được trên Apple Silicon, không bị báo "đã hỏng".
   Vì không phải chứng chỉ Apple Developer nên Gatekeeper vẫn hỏi lần đầu: chuột phải → Open,
   hoặc `xattr -dr com.apple.quarantine /Applications/FastDL.app`.
