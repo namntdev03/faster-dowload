@@ -1,6 +1,6 @@
 [package]
 name = "fastdl"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 description = "Trình tải file/video đa kết nối tốc độ cao (kiểu IDM) viết bằng Rust"
 
