@@ -31,6 +31,8 @@ fn main() {
             commands::remove_job,
             commands::reveal_job,
             commands::set_max_active,
+            commands::platform_info,
+            commands::open_release_page,
         ])
         .run(tauri::generate_context!())
         .expect("lỗi khi chạy ứng dụng FastDL");

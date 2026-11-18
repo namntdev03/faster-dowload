@@ -29,7 +29,9 @@ function load(): Settings {
     const raw = localStorage.getItem(KEY);
     if (!raw) return DEFAULTS;
     const s = { ...DEFAULTS, ...JSON.parse(raw) };
-    return { ...s, connections: snapConns(s.connections) };
+    // Cài đặt cũ lưu 'ba/b' (hay ra webm/opus); đổi sang định dạng ưu tiên m4a.
+    const format = s.format === 'ba/b' ? 'ba[ext=m4a]/ba/b' : s.format;
+    return { ...s, format, connections: snapConns(s.connections) };
   } catch {
     return DEFAULTS;
   }

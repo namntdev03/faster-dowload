@@ -100,3 +100,25 @@ pub fn reveal_job(state: State<'_, Jobs>, id: u64) -> Result<(), String> {
     };
     res.map(|_| ()).map_err(|e| e.to_string())
 }
+
+/// Hệ điều hành và kiến trúc CPU, để chọn đúng file cài đặt khi cập nhật.
+#[tauri::command]
+pub fn platform_info() -> (String, String) {
+    (std::env::consts::OS.to_string(), std::env::consts::ARCH.to_string())
+}
+
+/// Mở trang GitHub của dự án bằng trình duyệt mặc định (chỉ nhận link thuộc repo này).
+#[tauri::command]
+pub fn open_release_page(url: String) -> Result<(), String> {
+    if !url.starts_with("https://github.com/namntdev03/faster-dowload/") {
+        return Err("Chỉ mở được link thuộc kho GitHub của FastDL".into());
+    }
+    let res = if cfg!(target_os = "macos") {
+        Command::new("open").arg(&url).spawn()
+    } else if cfg!(target_os = "windows") {
+        Command::new("cmd").args(["/C", "start", "", &url]).spawn()
+    } else {
+        Command::new("xdg-open").arg(&url).spawn()
+    };
+    res.map(|_| ()).map_err(|e| e.to_string())
+}

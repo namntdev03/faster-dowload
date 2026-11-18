@@ -7,10 +7,12 @@ import { JobCard } from './components/JobCard';
 import { RemoveDialog } from './components/RemoveDialog';
 import { Filter, Sidebar } from './components/Sidebar';
 import { Toasts } from './components/Toasts';
+import { UpdateDialog } from './components/UpdateDialog';
 import { extractUrls } from './format';
 import { useJobs } from './hooks/useJobs';
 import { useSettings } from './hooks/useSettings';
 import { useToasts } from './hooks/useToasts';
+import { useUpdate } from './hooks/useUpdate';
 
 const TITLES: Record<Filter, string> = {
   all: 'Tất cả lượt tải',
@@ -43,6 +45,8 @@ export default function App() {
   const [query, setQuery] = useState('');
   const [addText, setAddText] = useState<string | null>(null); // null = hộp thoại đóng
   const [removing, setRemoving] = useState<Job | null>(null);
+  const [updateOpen, setUpdateOpen] = useState(false);
+  const upd = useUpdate();
   const searchRef = useRef<HTMLInputElement>(null);
 
   // Báo backend số lượt tải chạy cùng lúc (lúc mở app và khi đổi).
@@ -110,6 +114,12 @@ export default function App() {
         totalSpeed={totalSpeed}
         maxActive={settings.maxActive}
         onMaxActive={(maxActive) => update({ maxActive })}
+        version={upd.current}
+        updateAvailable={upd.state.phase === 'available'}
+        onUpdate={() => {
+          setUpdateOpen(true);
+          if (upd.state.phase === 'error' || upd.state.phase === 'latest') upd.check();
+        }}
       />
 
       <div className="main">
@@ -181,6 +191,17 @@ export default function App() {
             actions.remove(removing.id, deleteFile);
             setRemoving(null);
           }}
+        />
+      )}
+
+      {updateOpen && (
+        <UpdateDialog
+          current={upd.current}
+          state={upd.state}
+          dir={settings.dir}
+          onCheck={upd.check}
+          onClose={() => setUpdateOpen(false)}
+          onNotify={push}
         />
       )}
 

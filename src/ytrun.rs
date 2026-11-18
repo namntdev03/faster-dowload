@@ -19,7 +19,12 @@ pub async fn run(url: &str, dir: &Path, format: &str, frags: usize, aria: bool, 
     if aria {
         c.args(["--downloader", "aria2c", "--downloader-args", "aria2c:-x16 -s16 -k1M"]);
     }
-    c.args(["--merge-output-format", "mp4", "-P"]).arg(dir);
+    c.args(["--merge-output-format", "mp4"]);
+    // Chỉ âm thanh: luôn xuất m4a thay vì webm/opus.
+    if format.starts_with("ba") && !format.contains('+') {
+        c.args(["-x", "--audio-format", "m4a"]);
+    }
+    c.arg("-P").arg(dir);
 
     // CLI: để yt-dlp in thẳng ra terminal như bình thường.
     let Some(rep) = rep else {

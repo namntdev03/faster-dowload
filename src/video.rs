@@ -87,7 +87,29 @@ async fn native(info: &Info, dir: &Path, opts: &Options) -> Result<PathBuf> {
         files.push(download(&part.url, dir, Some(&name), &o).await?);
     }
     if files.len() == 1 {
-        let final_path = dir.join(format!("{base}.{}", info.parts[0].ext));
+        let ext = info.parts[0].ext.as_str();
+        // Chỉ âm thanh mà không phải m4a (vd webm/opus): đổi sang m4a (AAC, chứa trong MP4) cho dễ phát.
+        if !info.parts[0].has_video && !matches!(ext, "m4a" | "mp3" | "aac" | "flac" | "wav") {
+            if let Some(r) = &opts.reporter {
+                r.set_note("Đang chuyển sang M4A bằng ffmpeg...");
+            }
+            let out = dir.join(format!("{base}.m4a"));
+            let status = ytdlp::cmd("ffmpeg")
+                .args(["-y", "-hide_banner", "-loglevel", "error", "-i"])
+                .arg(&files[0])
+                .args(["-vn", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart"])
+                .arg(&out)
+                .status()
+                .await
+                .context("không chạy được ffmpeg (brew install ffmpeg)")?;
+            if !status.success() {
+                bail!("ffmpeg chuyển M4A thất bại");
+            }
+            let _ = std::fs::remove_file(&files[0]);
+            finish(opts, &out);
+            return Ok(out);
+        }
+        let final_path = dir.join(format!("{base}.{ext}"));
         std::fs::rename(&files[0], &final_path)?;
         finish(opts, &final_path);
         return Ok(final_path);

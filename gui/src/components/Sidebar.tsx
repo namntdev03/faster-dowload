@@ -1,4 +1,4 @@
-import { ArrowDownToLine, CircleCheck, LayoutList, Monitor, Moon, Pause, Plus, Sun, TriangleAlert, Zap } from 'lucide-react';
+import { ArrowDownToLine, CircleCheck, CircleFadingArrowUp, LayoutList, Monitor, Moon, Pause, Plus, Sun, TriangleAlert, Zap } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { fmtSpeed, MOD_KEY } from '../format';
 import type { ThemeMode } from '../hooks/useSettings';
@@ -26,9 +26,12 @@ interface Props {
   totalSpeed: number;
   maxActive: number;
   onMaxActive: (n: number) => void;
+  version: string;
+  updateAvailable: boolean;
+  onUpdate: () => void;
 }
 
-export function Sidebar({ filter, onFilter, counts, onAdd, theme, onTheme, speeds, totalSpeed, maxActive, onMaxActive }: Props) {
+export function Sidebar({ filter, onFilter, counts, onAdd, theme, onTheme, speeds, totalSpeed, maxActive, onMaxActive, version, updateAvailable, onUpdate }: Props) {
   return (
     <aside className="sidebar">
       <div className="brand">
@@ -36,6 +39,7 @@ export function Sidebar({ filter, onFilter, counts, onAdd, theme, onTheme, speed
           <Zap size={17} strokeWidth={2.2} fill="currentColor" />
         </span>
         <span className="hide-narrow">FastDL</span>
+        {version && <span className="brand-ver hide-narrow">v{version}</span>}
       </div>
 
       <button type="button" className="btn btn-primary btn-block" onClick={onAdd} aria-label="Thêm URL" title="Thêm URL">
@@ -98,6 +102,17 @@ export function Sidebar({ filter, onFilter, counts, onAdd, theme, onTheme, speed
             ]}
           />
         </div>
+        <button
+          type="button"
+          className={`update-btn${updateAvailable ? ' has-update' : ''}`}
+          onClick={onUpdate}
+          title={updateAvailable ? 'Có bản cập nhật mới' : 'Kiểm tra cập nhật'}
+          aria-label={updateAvailable ? 'Cập nhật: có bản mới' : 'Kiểm tra cập nhật'}
+        >
+          <CircleFadingArrowUp size={16} aria-hidden="true" />
+          <span className="hide-narrow">{updateAvailable ? 'Có bản cập nhật mới' : 'Cập nhật'}</span>
+          {updateAvailable && <span className="update-dot" aria-hidden="true" />}
+        </button>
       </div>
     </aside>
   );

@@ -35,5 +35,7 @@ export const api = {
   resume: (id: number) => invoke<void>('resume_job', { id }),
   remove: (id: number, deleteFile: boolean) => invoke<void>('remove_job', { id, deleteFile }),
   reveal: (id: number) => invoke<void>('reveal_job', { id }),
+  platformInfo: () => invoke<[string, string]>('platform_info'),
+  openReleasePage: (url: string) => invoke<void>('open_release_page', { url }),
   setMaxActive: (n: number) => invoke<void>('set_max_active', { n }),
 };

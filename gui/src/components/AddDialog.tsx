@@ -13,7 +13,7 @@ const QUALITIES = [
   { label: 'Tối đa 1080p', value: 'bv*[height<=1080]+ba/b' },
   { label: 'Tối đa 720p', value: 'bv*[height<=720]+ba/b' },
   { label: 'Tối đa 480p', value: 'bv*[height<=480]+ba/b' },
-  { label: 'Chỉ âm thanh', value: 'ba/b' },
+  { label: 'Chỉ âm thanh (M4A)', value: 'ba[ext=m4a]/ba/b' },
 ];
 
 interface Props {
